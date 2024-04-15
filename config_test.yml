@@ -1,0 +1,42 @@
+gpu_id: 3
+multi_gpus: False
+num_workers: 0
+seed: 42
+exp_name: 'SCENE'
+blind: True
+use_sg: True
+sg_path: '/ssd_data/agqa/Scene-Graph-Benchmark.pytorch/predicted_scene_graphs/video_data_small_preprocessed_triplets.pickle'
+graph_emb_type: 'mean'
+architecture: 'SG_GNN_MLP'
+use_wandb: False
+
+
+train:
+  gnn_arch: 'SCENE'
+  train_num: 10000
+  lr: 1e-3
+  batch_size: 64
+  node_feat_shape: 151
+  edge_feat_shape: 151
+  attention_heads: 16
+  num_epochs: 120
+  in_feats: 256
+  mlp_in_feats: 1024 # 768 cls, 256 graph
+  out_feats: 171
+  num_layers: 3
+  hidden_size: [ 768, 512, 256 ]
+  dropout: 0.3
+  edge_feat_type: 'same' #or 'original'
+  further_train: False
+  model_path: '/ssd_data/agqa/results/GNN_HCRN/mean/predicted/filtered_subset/2lang_SCENE/exp10k_40ep/'
+
+val:
+  val_num: 1000
+
+test:
+  test_num: 2000
+  write_preds: True
+
+dataset:
+  name: 'AGQA'
+  save_dir: '/ssd_data/agqa/results/GNN_HCRN/mean/predicted/filtered_subset/2lang_SCENE/exp10k_120ep/'
