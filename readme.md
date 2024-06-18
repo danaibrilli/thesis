@@ -18,10 +18,10 @@ So, we introduce a methodology that
 - **Train Functions**: Includes utility functions for model training such as data loading, batch processing, and metrics calculations.
 
 ### Usage
-The main execution happens through `train.py`, which includes comprehensive functions for training the models and evaluating them. To run a training session, you can use the following command: 
+The main execution happens through `main.py`, which initializes the model, trains and evaluates it. To run a training session, you can use the following command: 
 
 ```bash
-python train.py --config config.yml --model CRN
+python main.py --config config.yml 
 ```
 
 ### Dependencies

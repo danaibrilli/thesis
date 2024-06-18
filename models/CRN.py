@@ -1,14 +1,23 @@
-import numpy as np
-import itertools
-
 import torch
 import torch.nn as nn
-from torch.nn.modules.module import Module
+import itertools
+import numpy as np
 
-
-class CRN(Module):
+class CRN(nn.Module):
     def __init__(self, module_dim, num_objects, max_subset_size, gating=False, spl_resolution=1,
-                 dropout_style=0, crn_dropout_prob=0.10): # NEW DROPOUT
+                 dropout_style=0, crn_dropout_prob=0.10):
+        """
+        Initialize the Composition Relation Network (CRN) module.
+
+        Args:
+            module_dim (int): Dimensionality of input and output features.
+            num_objects (int): Number of objects in the input.
+            max_subset_size (int): Maximum subset size for relations.
+            gating (bool): Whether to use gating mechanism.
+            spl_resolution (int): Resolution for subsampling.
+            dropout_style (int): Dropout style (0 or 1).
+            crn_dropout_prob (float): Dropout probability for CRN.
+        """
         super(CRN, self).__init__()
         self.module_dim = module_dim
         self.gating = gating
@@ -16,6 +25,7 @@ class CRN(Module):
         self.k_objects_fusion = nn.ModuleList()
         if self.gating:
             self.gate_k_objects_fusion = nn.ModuleList()
+        # Initialize fusion layers for different subset sizes
         for i in range(min(num_objects, max_subset_size + 1), 1, -1):
             if dropout_style == 0:
                 self.k_objects_fusion.append(nn.Linear(2 * module_dim, module_dim))
@@ -23,9 +33,11 @@ class CRN(Module):
                     self.gate_k_objects_fusion.append(nn.Linear(2 * module_dim, module_dim))
             elif dropout_style == 1:
                 # NEW DROPOUT
-                self.k_objects_fusion.append(nn.Sequential(nn.Dropout(crn_dropout_prob), nn.Linear(2 * module_dim, module_dim)))
+                self.k_objects_fusion.append(nn.Sequential(nn.Dropout(crn_dropout_prob), 
+                                                            nn.Linear(2 * module_dim, module_dim)))
                 if self.gating:
-                    self.gate_k_objects_fusion.append(nn.Sequential(nn.Dropout(crn_dropout_prob), nn.Linear(2 * module_dim, module_dim)))
+                    self.gate_k_objects_fusion.append(nn.Sequential(nn.Dropout(crn_dropout_prob), 
+                                                                     nn.Linear(2 * module_dim, module_dim)))
                                     
         self.spl_resolution = spl_resolution
         self.activation = nn.ELU()
@@ -33,13 +45,19 @@ class CRN(Module):
 
     def forward(self, object_list, cond_feat):
         """
-        :param object_list: list of tensors or vectors
-        :param cond_feat: conditioning feature
-        :return: list of output objects
+        Forward pass of the CRN module.
+
+        Args:
+            object_list (list of Tensor): List of tensors or vectors.
+            cond_feat (Tensor): Conditioning feature.
+
+        Returns:
+            list: List of output objects.
         """
         scales = [i for i in range(len(object_list), 1, -1)]
         relations_scales = []
         subsample_scales = []
+        # Generate relation sets for different scales
         for scale in scales:
             relations_scale = self.relationset(len(object_list), scale)
             relations_scales.append(relations_scale)
@@ -57,9 +75,7 @@ class CRN(Module):
             for id_choice, idx in enumerate(idx_relations_randomsample):
                 clipFeatList = [object_list[obj].unsqueeze(1) for obj in relations_scales[scaleID][idx]]
                 # g_theta
-                g_feat = torch.cat(clipFeatList, dim=1)
-                g_feat = g_feat.mean(1)
-                #print('feats', g_feat.size(), cond_feat.size())
+                g_feat = torch.cat(clipFeatList, dim=1).mean(1)
                 if len(g_feat.size()) == 2:
                     h_feat = torch.cat((g_feat, cond_feat), dim=-1)
                 elif len(g_feat.size()) == 3:
@@ -75,4 +91,14 @@ class CRN(Module):
         return crn_feats
 
     def relationset(self, num_objects, num_object_relation):
+        """
+        Generate relation sets for given number of objects and relation size.
+
+        Args:
+            num_objects (int): Number of objects.
+            num_object_relation (int): Number of objects in each relation.
+
+        Returns:
+            list: List of tuples representing relations.
+        """
         return list(itertools.combinations([i for i in range(num_objects)], num_object_relation))
